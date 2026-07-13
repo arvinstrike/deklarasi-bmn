@@ -73,7 +73,7 @@ export function Board({ initial }: { initial: BoardState }) {
     <main className="relative h-dvh w-screen overflow-hidden bg-background">
       <FitToScreen>
         <div
-          className="relative flex h-full w-full flex-col overflow-hidden bg-card px-[3.2cqw] pb-[4cqh] pt-[3.5cqh]"
+          className="relative flex h-full w-full flex-col overflow-hidden bg-card px-[3.2cqw] pb-[4cqh] pt-[5.5cqh]"
           style={{ containerType: 'size' }}
         >
           <LogoBar />
@@ -115,7 +115,7 @@ function LogoGroup({ logos }: { logos: { src: string; alt: string }[] }) {
       {logos.map((l) => (
         // ponytail: h-[4.5cqh] ≈ 49px on 1080 — tune here if too big/small.
         // eslint-disable-next-line @next/next/no-img-element
-        <img key={l.src} src={l.src} alt={l.alt} className="h-[4.5cqh] w-auto object-contain" />
+        <img key={l.src} src={l.src} alt={l.alt} className="h-[5.5cqh] w-auto object-contain" />
       ))}
     </div>
   )
@@ -123,7 +123,7 @@ function LogoGroup({ logos }: { logos: { src: string; alt: string }[] }) {
 
 function LogoBar() {
   return (
-    <div className="mb-[1.6cqh] flex items-center justify-between px-[2cqw]">
+    <div className="mb-[1.6cqh] flex items-center justify-between px-[3cqw]">
       <LogoGroup logos={LOGOS_LEFT} />
       <LogoGroup logos={LOGOS_RIGHT} />
     </div>
