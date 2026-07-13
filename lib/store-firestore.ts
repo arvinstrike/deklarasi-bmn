@@ -11,10 +11,16 @@ type OfficialDoc = Omit<Official, 'id'>
 
 // Seed the roster into Firestore once (first run). Confirmation state then lives
 // on each official doc, so the admin can edit/delete officials later.
+// `seeded` short-circuits the check per warm instance — no extra round trip.
+let seeded = false
 async function ensureSeeded() {
+  if (seeded) return
   const db = adminDb()
   const existing = await db.collection(OFFICIALS).limit(1).get()
-  if (!existing.empty) return
+  if (!existing.empty) {
+    seeded = true
+    return
+  }
   const batch = db.batch()
   batch.set(db.doc(EVENT_DOC), EVENT)
   ROSTER.forEach((r, i) => {
@@ -31,6 +37,7 @@ async function ensureSeeded() {
     } satisfies OfficialDoc)
   })
   await batch.commit()
+  seeded = true
 }
 
 export async function getState(): Promise<BoardState> {
