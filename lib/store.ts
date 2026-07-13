@@ -13,3 +13,7 @@ export const adminUpdateOfficial = impl.adminUpdateOfficial
 export const adminDeleteOfficial = impl.adminDeleteOfficial
 export const updateEvent = impl.updateEvent
 export const resetAll = impl.resetAll
+export const addOfficial = impl.addOfficial
+export const saveDefaults = impl.saveDefaults
+export const restoreDefaultsAll = impl.restoreDefaultsAll
+export const restoreDefaultOne = impl.restoreDefaultOne

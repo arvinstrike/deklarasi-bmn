@@ -23,14 +23,16 @@ export function ConfirmClient({ official }: { official: Official }) {
   return (
     <main className="flex min-h-dvh w-full flex-col items-center justify-center bg-background px-5 py-8 text-center">
       <div className="flex w-full max-w-md flex-col items-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={encodeURI(official.photo)}
-          alt={official.name}
-          className={`h-36 w-36 rounded-full object-cover object-top ring-2 ring-accent ${
-            done ? '' : 'opacity-40 grayscale'
-          }`}
-        />
+        {official.photo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={encodeURI(official.photo)}
+            alt={official.name}
+            className={`h-36 w-36 rounded-full object-cover object-top ring-2 ring-accent ${
+              done ? '' : 'opacity-40 grayscale'
+            }`}
+          />
+        )}
         <h1 className="mt-6 font-serif text-2xl font-semibold text-foreground">
           {official.name}
         </h1>

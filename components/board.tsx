@@ -39,7 +39,7 @@ export function Board({ initial }: { initial: BoardState }) {
   const [current, setCurrent] = useState<Official | null>(null)
 
   useEffect(() => {
-    const confirmed = state.officials.filter((o) => o.confirmed)
+    const confirmed = state.officials.filter((o) => o.confirmed && !o.hidden)
     const ids = new Set(confirmed.map((o) => o.id))
     if (known.current === null) {
       known.current = ids
@@ -64,9 +64,10 @@ export function Board({ initial }: { initial: BoardState }) {
     return () => clearTimeout(t)
   }, [current])
 
-  const eselon1 = state.officials.slice(0, ESELON_I_COUNT)
-  const rest = state.officials.slice(ESELON_I_COUNT)
-  const signed = state.officials.filter((o) => o.confirmed).length
+  const visible = state.officials.filter((o) => !o.hidden)
+  const eselon1 = visible.slice(0, ESELON_I_COUNT)
+  const rest = visible.slice(ESELON_I_COUNT)
+  const signed = visible.filter((o) => o.confirmed).length
 
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-background">
@@ -75,7 +76,7 @@ export function Board({ initial }: { initial: BoardState }) {
           className="relative flex h-full w-full flex-col overflow-hidden bg-card px-[3.2cqw] pb-[4cqh] pt-[5cqh]"
           style={{ containerType: 'size' }}
         >
-          <Header event={state.event} signed={signed} total={state.officials.length} />
+          <Header event={state.event} signed={signed} total={visible.length} />
 
           <div className="mt-[2cqh] flex min-h-0 flex-1 flex-col gap-[2.5cqh]">
             <div className="flex shrink-0 justify-center gap-[4cqw]">
@@ -160,12 +161,14 @@ function Announcement({ official }: { official: Official }) {
       className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-card/70 backdrop-blur-[2px] [animation:announceIn_500ms_ease-out]"
     >
       <div className="flex flex-col items-center px-[6cqw] text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={encodeURI(official.photo)}
-          alt=""
-          className="mb-[2cqh] h-[26cqh] w-[26cqh] rounded-full object-cover object-top ring-[0.3cqw] ring-gold shadow-[0_0_2.4cqw_var(--gold)]"
-        />
+        {official.photo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={encodeURI(official.photo)}
+            alt=""
+            className="mb-[2cqh] h-[26cqh] w-[26cqh] rounded-full object-cover object-top ring-[0.3cqw] ring-gold shadow-[0_0_2.4cqw_var(--gold)]"
+          />
+        )}
         <p className="font-mono text-[0.9cqw] uppercase tracking-[0.42em] text-accent">
           Telah Menyatakan Komitmen
         </p>

@@ -12,6 +12,8 @@ export interface Official {
   phone?: string | null
   /** Last WA invite result. */
   wa_status?: 'sent' | 'failed' | null
+  /** Soft-delete: hidden officials stay in the DB but drop off the board. */
+  hidden?: boolean
 }
 
 export interface EventInfo {

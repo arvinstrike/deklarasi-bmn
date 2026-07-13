@@ -23,6 +23,7 @@ export function AdminPanel({
   const [state, setState] = useState<BoardState>(initial)
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState('')
+  const [adding, setAdding] = useState(false)
 
   async function refresh() {
     const res = await fetch('/api/state', { cache: 'no-store' })
@@ -37,7 +38,7 @@ export function AdminPanel({
   }
 
   async function sendAll() {
-    const targets = state.officials.filter((o) => o.phone)
+    const targets = state.officials.filter((o) => o.phone && !o.hidden)
     if (targets.length === 0) return
     if (!confirm(`Kirim undangan WA ke ${targets.length} pejabat?`)) return
     setBusy(true)
@@ -53,8 +54,12 @@ export function AdminPanel({
     setBusy(false)
   }
 
-  const signed = state.officials.filter((o) => o.confirmed).length
-  const withPhone = state.officials.filter((o) => o.phone).length
+  const signed = state.officials.filter((o) => o.confirmed && !o.hidden).length
+  const shown = state.officials.filter((o) => !o.hidden).length
+  const withPhone = state.officials.filter((o) => o.phone && !o.hidden).length
+
+  const btn =
+    'rounded border border-border px-3 py-1.5 text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted disabled:opacity-40'
 
   return (
     <main className="mx-auto min-h-dvh max-w-3xl bg-background px-4 py-8">
@@ -62,22 +67,17 @@ export function AdminPanel({
         <div>
           <h1 className="font-serif text-2xl font-semibold text-foreground">Admin</h1>
           <p className="text-sm text-muted-foreground">
-            {signed} / {state.officials.length} menyatakan komitmen
+            {signed} / {shown} menyatakan komitmen
           </p>
         </div>
         <div className="flex gap-2">
-          <a
-            href="/"
-            className="rounded border border-border px-3 py-1.5 text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted"
-          >
-            Papan
-          </a>
+          <a href="/" className={btn}>Papan</a>
           <button
             onClick={async () => {
               await post('/api/admin/logout', {})
               router.refresh()
             }}
-            className="rounded border border-border px-3 py-1.5 text-xs uppercase tracking-widest text-muted-foreground hover:bg-muted"
+            className={btn}
           >
             Keluar
           </button>
@@ -87,8 +87,7 @@ export function AdminPanel({
       {!qontakReady && (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800">
           WhatsApp (Qontak) belum dikonfigurasi. Isi env{' '}
-          <code className="font-mono text-xs">QONTAK_TOKEN / QONTAK_CHANNEL_ID / QONTAK_TEMPLATE_ID</code>{' '}
-          agar tombol kirim aktif. Nomor HP tetap bisa diisi sekarang.
+          <code className="font-mono text-xs">QONTAK_TOKEN / QONTAK_CHANNEL_ID / QONTAK_TEMPLATE_ID</code>.
         </div>
       )}
 
@@ -101,21 +100,44 @@ export function AdminPanel({
       />
 
       <section className="mt-6">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Pejabat
+            Pejabat ({shown} tampil)
           </h2>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {progress && <span className="text-xs text-muted-foreground">{progress}</span>}
+            <button disabled={busy} onClick={() => setAdding((v) => !v)} className={btn}>
+              + Tambah
+            </button>
             <button
               disabled={busy || signed === 0}
               onClick={() => {
-                if (confirm('Reset SEMUA konfirmasi? Semua pejabat kembali ke status belum menyatakan.'))
+                if (confirm('Hapus semua konfirmasi? (data pejabat tetap)'))
                   run(() => post('/api/admin/reset', {}))
               }}
-              className="rounded border border-red-300 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
+              className={btn}
             >
-              Reset semua
+              Reset konfirmasi
+            </button>
+            <button
+              disabled={busy}
+              onClick={() => {
+                if (confirm('Simpan kondisi 24 pejabat saat ini sebagai default (baseline restore)?'))
+                  run(() => post('/api/admin/roster', { op: 'save-default' }))
+              }}
+              className={btn}
+            >
+              Simpan sbg default
+            </button>
+            <button
+              disabled={busy}
+              onClick={() => {
+                if (confirm('Kembalikan SEMUA ke default? Yang ditambah dihapus, yang disembunyikan/diubah dikembalikan, konfirmasi direset.'))
+                  run(() => post('/api/admin/roster', { op: 'restore-all' }))
+              }}
+              className="rounded border border-red-300 px-3 py-1.5 text-xs uppercase tracking-widest text-red-600 hover:bg-red-50 disabled:opacity-40"
+            >
+              Kembalikan ke default
             </button>
             <button
               disabled={busy || withPhone === 0}
@@ -126,6 +148,18 @@ export function AdminPanel({
             </button>
           </div>
         </div>
+
+        {adding && (
+          <AddOfficialForm
+            busy={busy}
+            onAdd={(patch) => {
+              run(() => post('/api/admin/official', { op: 'add', patch }))
+              setAdding(false)
+            }}
+            onCancel={() => setAdding(false)}
+          />
+        )}
+
         <div className="flex flex-col gap-2">
           {state.officials.map((o) => (
             <OfficialRow
@@ -133,9 +167,13 @@ export function AdminPanel({
               official={o}
               busy={busy}
               onUpdate={(patch) => run(() => post('/api/admin/official', { op: 'update', id: o.id, patch }))}
-              onDelete={() => run(() => post('/api/admin/official', { op: 'delete', id: o.id }))}
+              onHide={() => run(() => post('/api/admin/official', { op: o.hidden ? 'show' : 'hide', id: o.id }))}
               onUnconfirm={() => run(() => post('/api/admin/official', { op: 'unconfirm', id: o.id }))}
               onSend={() => run(() => post('/api/admin/invite', { id: o.id }))}
+              onRestore={() => {
+                if (confirm(`Kembalikan ${o.name} ke data default?`))
+                  run(() => post('/api/admin/roster', { op: 'restore-one', id: o.id }))
+              }}
             />
           ))}
         </div>
@@ -154,18 +192,15 @@ function TestSend() {
     setBusy(true)
     setResult(null)
     const res = await post('/api/admin/test-invite', { phone, name })
-    const data = await res.json().catch(() => ({ ok: false, error: 'gagal' }))
-    setResult(data)
+    setResult(await res.json().catch(() => ({ ok: false, error: 'gagal' })))
     setBusy(false)
   }
 
   return (
     <section className="mb-6 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
-      <h2 className="mb-1 font-mono text-xs uppercase tracking-widest text-primary">
-        Tes Kirim WA
-      </h2>
+      <h2 className="mb-1 font-mono text-xs uppercase tracking-widest text-primary">Tes Kirim WA</h2>
       <p className="mb-3 text-xs text-muted-foreground">
-        Kirim ke nomor bebas (pribadi/random) untuk menguji. Tidak menyentuh data pejabat.
+        Kirim ke nomor bebas untuk menguji. Tidak menyentuh data pejabat.
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -196,12 +231,45 @@ function TestSend() {
       </div>
       {result && (
         <p className={`mt-3 text-sm ${result.ok ? 'text-green-600' : 'text-red-600'}`}>
-          {result.ok
-            ? '✓ Terkirim! Cek WhatsApp nomor tersebut.'
-            : `✗ Gagal: ${result.error ?? 'unknown'}`}
+          {result.ok ? '✓ Terkirim! Cek WhatsApp nomor tersebut.' : `✗ Gagal: ${result.error ?? 'unknown'}`}
         </p>
       )}
     </section>
+  )
+}
+
+function AddOfficialForm({
+  busy,
+  onAdd,
+  onCancel,
+}: {
+  busy: boolean
+  onAdd: (patch: { name: string; position: string; phone: string }) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState('')
+  const [position, setPosition] = useState('')
+  const [phone, setPhone] = useState('')
+
+  return (
+    <div className="mb-2 flex flex-col gap-2 rounded border border-primary/50 bg-primary/5 p-3">
+      <p className="font-mono text-xs uppercase tracking-widest text-primary">Tambah pejabat</p>
+      <Field label="Nama" value={name} onChange={setName} />
+      <Field label="Jabatan" value={position} onChange={setPosition} />
+      <Field label="Nomor WhatsApp (opsional)" value={phone} onChange={setPhone} />
+      <div className="flex gap-2">
+        <button
+          disabled={busy || !name.trim() || !position.trim()}
+          onClick={() => onAdd({ name, position, phone })}
+          className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+        >
+          Tambah
+        </button>
+        <button onClick={onCancel} className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted">
+          Batal
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -221,9 +289,7 @@ function EventForm({
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">
-      <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        Acara
-      </h2>
+      <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">Acara</h2>
       <div className="flex flex-col gap-2">
         <Field label="Judul" value={title} onChange={setTitle} />
         <Field label="Subjudul" value={subtitle} onChange={setSubtitle} />
@@ -252,9 +318,7 @@ function EventForm({
           disabled={busy}
           onClick={() => onSave({ locked: !event.locked })}
           className={`rounded border px-4 py-2 text-sm font-medium disabled:opacity-40 ${
-            event.locked
-              ? 'border-primary bg-primary/10 text-primary'
-              : 'border-border text-muted-foreground hover:bg-muted'
+            event.locked ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'
           }`}
         >
           {event.locked ? 'Terkunci — Buka' : 'Kunci Acara'}
@@ -268,16 +332,18 @@ function OfficialRow({
   official,
   busy,
   onUpdate,
-  onDelete,
+  onHide,
   onUnconfirm,
   onSend,
+  onRestore,
 }: {
   official: Official
   busy: boolean
   onUpdate: (patch: { name: string; position: string; phone: string }) => void
-  onDelete: () => void
+  onHide: () => void
   onUnconfirm: () => void
   onSend: () => void
+  onRestore: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(official.name)
@@ -289,7 +355,7 @@ function OfficialRow({
       <div className="flex flex-col gap-2 rounded border border-primary/50 bg-card p-3">
         <Field label="Nama" value={name} onChange={setName} />
         <Field label="Jabatan" value={position} onChange={setPosition} />
-        <Field label="Nomor WhatsApp (mis. 08123...)" value={phone} onChange={setPhone} />
+        <Field label="Nomor WhatsApp" value={phone} onChange={setPhone} />
         <div className="flex gap-2">
           <button
             disabled={busy}
@@ -301,10 +367,7 @@ function OfficialRow({
           >
             Simpan
           </button>
-          <button
-            onClick={() => setEditing(false)}
-            className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
-          >
+          <button onClick={() => setEditing(false)} className="rounded border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted">
             Batal
           </button>
         </div>
@@ -313,7 +376,7 @@ function OfficialRow({
   }
 
   return (
-    <div className="flex items-center gap-3 rounded border border-border bg-card p-3">
+    <div className={`flex items-center gap-3 rounded border border-border p-3 ${official.hidden ? 'bg-muted/40 opacity-60' : 'bg-card'}`}>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">{official.name}</p>
         <p className="truncate text-xs text-muted-foreground">{official.position}</p>
@@ -321,22 +384,23 @@ function OfficialRow({
           {official.phone || 'belum ada nomor'}
         </p>
       </div>
+      {official.hidden && (
+        <span className="shrink-0 rounded bg-muted px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
+          Disembunyikan
+        </span>
+      )}
       {official.confirmed && (
         <span className="shrink-0 rounded bg-primary/10 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wider text-primary">
           Komitmen
         </span>
       )}
       {official.wa_status === 'sent' && (
-        <span className="shrink-0 text-[0.65rem] font-medium uppercase tracking-wider text-green-600">
-          Terkirim
-        </span>
+        <span className="shrink-0 text-[0.65rem] font-medium uppercase tracking-wider text-green-600">Terkirim</span>
       )}
       {official.wa_status === 'failed' && (
-        <span className="shrink-0 text-[0.65rem] font-medium uppercase tracking-wider text-red-600">
-          Gagal
-        </span>
+        <span className="shrink-0 text-[0.65rem] font-medium uppercase tracking-wider text-red-600">Gagal</span>
       )}
-      <div className="flex shrink-0 gap-1">
+      <div className="flex shrink-0 flex-wrap justify-end gap-1">
         <button
           disabled={busy || !official.phone}
           onClick={onSend}
@@ -346,29 +410,18 @@ function OfficialRow({
           Kirim
         </button>
         {official.confirmed && (
-          <button
-            disabled={busy}
-            onClick={onUnconfirm}
-            className="rounded border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40"
-          >
+          <button disabled={busy} onClick={onUnconfirm} className="rounded border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40">
             Batalkan
           </button>
         )}
-        <button
-          disabled={busy}
-          onClick={() => setEditing(true)}
-          className="rounded border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40"
-        >
+        <button disabled={busy} onClick={() => setEditing(true)} className="rounded border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40">
           Edit
         </button>
-        <button
-          disabled={busy}
-          onClick={() => {
-            if (confirm(`Hapus ${official.name}?`)) onDelete()
-          }}
-          className="rounded border border-red-300 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
-        >
-          Hapus
+        <button disabled={busy} onClick={onRestore} className="rounded border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40">
+          Kembalikan
+        </button>
+        <button disabled={busy} onClick={onHide} className="rounded border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-40">
+          {official.hidden ? 'Tampilkan' : 'Sembunyikan'}
         </button>
       </div>
     </div>

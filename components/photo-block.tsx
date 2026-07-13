@@ -9,7 +9,7 @@ function initials(name: string): string {
 
 // Sizes are cell-relative: cqw = 1% of the cell width (cell is a container).
 export function PhotoBlock({ official }: { official: Official }) {
-  const revealed = official.confirmed
+  const revealed = Boolean(official.confirmed && official.photo)
 
   return (
     <div className="flex flex-col items-center">
