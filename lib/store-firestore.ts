@@ -74,14 +74,17 @@ export async function confirmByToken(token: string): Promise<Official | null> {
   return { id: fresh.id, ...(fresh.data() as OfficialDoc) }
 }
 
-export async function unconfirmByToken(token: string): Promise<boolean> {
-  const db = adminDb()
-  const snap = await db
-    .collection(OFFICIALS)
-    .where('token', '==', token)
-    .limit(1)
-    .get()
-  if (snap.empty) return false
-  await snap.docs[0].ref.update({ confirmed: false, confirmed_at: null })
-  return true
+export async function adminUpdateOfficial(
+  id: string,
+  patch: Partial<OfficialDoc>,
+): Promise<void> {
+  await adminDb().collection(OFFICIALS).doc(id).update(patch)
+}
+
+export async function adminDeleteOfficial(id: string): Promise<void> {
+  await adminDb().collection(OFFICIALS).doc(id).delete()
+}
+
+export async function updateEvent(patch: Partial<EventInfo>): Promise<void> {
+  await adminDb().doc(EVENT_DOC).set(patch, { merge: true })
 }

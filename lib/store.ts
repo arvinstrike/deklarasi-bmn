@@ -9,4 +9,6 @@ const impl = isAdminConfigured ? firestore : memory
 export const getState = impl.getState
 export const findByToken = impl.findByToken
 export const confirmByToken = impl.confirmByToken
-export const unconfirmByToken = impl.unconfirmByToken
+export const adminUpdateOfficial = impl.adminUpdateOfficial
+export const adminDeleteOfficial = impl.adminDeleteOfficial
+export const updateEvent = impl.updateEvent
