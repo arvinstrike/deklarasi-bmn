@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --font-serif: var(--font-cormorant), Georgia, 'Times New Roman', serif;
+  --font-sans: var(--font-geist-sans), sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-gold: var(--gold);
+}
+
+:root {
+  /* Digitall cold-blue palette — single source of truth. */
+  --ek-blue: #5377d7;
+  --ek-blue-strong: #315bc5;
+  --ek-blue-soft: #eef5ff;
+
+  --background: #f5f8ff;
+  --foreground: #1e2a44;
+  --card: #ffffff;
+  --primary: var(--ek-blue);
+  --primary-foreground: #ffffff;
+  --accent: var(--ek-blue);
+  --muted: var(--ek-blue-soft);
+  --muted-foreground: #5b6b8c;
+  --border: #d6e2f7;
+  --gold: var(--ek-blue);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
+}
+
+@keyframes fadeInSig {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes announceIn {
+  from {
+    opacity: 0;
+    transform: translateY(1.5cqh) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
