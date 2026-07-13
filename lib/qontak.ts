@@ -36,7 +36,7 @@ export async function sendInvite(
     language: { code: 'id' },
     parameters: {
       body: [{ key: '1', value: 'nama', value_text: official.name }],
-      buttons: [{ index: '0', type: 'url', value: official.token }],
+      buttons: [{ index: '0', type: 'URL', value: official.token }],
     },
   }
 
