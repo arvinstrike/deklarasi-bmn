@@ -99,24 +99,33 @@ export function Board({ initial }: { initial: BoardState }) {
   )
 }
 
-// Static institutional logos, one row, left→right in protocol order.
-const LOGOS = [
+// Static institutional logos — two flanking the top-left, two the top-right.
+const LOGOS_LEFT = [
   { src: '/logo/1-setjen.jpeg', alt: 'Setjen DPR RI' },
   { src: '/logo/2-roku.png', alt: 'ROKU' },
-  { src: '/logo/3-bmn.png', alt: 'BMN' },
-  { src: '/logo/4-adm-keu.png', alt: 'Administrasi Keuangan' },
+]
+const LOGOS_RIGHT = [
   { src: '/logo/5-ts.png', alt: 'TS' },
   { src: '/logo/6-zona.png', alt: 'Zona Integritas' },
 ]
 
-function LogoBar() {
+function LogoGroup({ logos }: { logos: { src: string; alt: string }[] }) {
   return (
-    <div className="mb-[1.6cqh] flex items-center justify-center gap-[2.8cqw]">
-      {LOGOS.map((l) => (
+    <div className="flex items-center gap-[2.8cqw]">
+      {logos.map((l) => (
         // ponytail: h-[4.5cqh] ≈ 49px on 1080 — tune here if too big/small.
         // eslint-disable-next-line @next/next/no-img-element
         <img key={l.src} src={l.src} alt={l.alt} className="h-[4.5cqh] w-auto object-contain" />
       ))}
+    </div>
+  )
+}
+
+function LogoBar() {
+  return (
+    <div className="mb-[1.6cqh] flex items-center justify-between px-[2cqw]">
+      <LogoGroup logos={LOGOS_LEFT} />
+      <LogoGroup logos={LOGOS_RIGHT} />
     </div>
   )
 }
