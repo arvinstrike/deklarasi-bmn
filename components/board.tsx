@@ -73,9 +73,10 @@ export function Board({ initial }: { initial: BoardState }) {
     <main className="relative h-dvh w-screen overflow-hidden bg-background">
       <FitToScreen>
         <div
-          className="relative flex h-full w-full flex-col overflow-hidden bg-card px-[3.2cqw] pb-[4cqh] pt-[5cqh]"
+          className="relative flex h-full w-full flex-col overflow-hidden bg-card px-[3.2cqw] pb-[4cqh] pt-[3.5cqh]"
           style={{ containerType: 'size' }}
         >
+          <LogoBar />
           <Header event={state.event} signed={signed} total={visible.length} />
 
           <div className="mt-[2cqh] flex min-h-0 flex-1 flex-col gap-[2.5cqh]">
@@ -95,6 +96,28 @@ export function Board({ initial }: { initial: BoardState }) {
         </div>
       </FitToScreen>
     </main>
+  )
+}
+
+// Static institutional logos, one row, left→right in protocol order.
+const LOGOS = [
+  { src: '/logo/1-setjen.jpeg', alt: 'Setjen DPR RI' },
+  { src: '/logo/2-roku.png', alt: 'ROKU' },
+  { src: '/logo/3-bmn.png', alt: 'BMN' },
+  { src: '/logo/4-adm-keu.png', alt: 'Administrasi Keuangan' },
+  { src: '/logo/5-ts.png', alt: 'TS' },
+  { src: '/logo/6-zona.png', alt: 'Zona Integritas' },
+]
+
+function LogoBar() {
+  return (
+    <div className="mb-[1.6cqh] flex items-center justify-center gap-[2.8cqw]">
+      {LOGOS.map((l) => (
+        // ponytail: h-[4.5cqh] ≈ 49px on 1080 — tune here if too big/small.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={l.src} src={l.src} alt={l.alt} className="h-[4.5cqh] w-auto object-contain" />
+      ))}
+    </div>
   )
 }
 
