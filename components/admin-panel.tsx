@@ -108,6 +108,16 @@ export function AdminPanel({
           <div className="flex items-center gap-3">
             {progress && <span className="text-xs text-muted-foreground">{progress}</span>}
             <button
+              disabled={busy || signed === 0}
+              onClick={() => {
+                if (confirm('Reset SEMUA konfirmasi? Semua pejabat kembali ke status belum menyatakan.'))
+                  run(() => post('/api/admin/reset', {}))
+              }}
+              className="rounded border border-red-300 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40"
+            >
+              Reset semua
+            </button>
+            <button
               disabled={busy || withPhone === 0}
               onClick={sendAll}
               className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40"

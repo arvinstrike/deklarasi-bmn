@@ -97,3 +97,13 @@ export async function adminDeleteOfficial(id: string): Promise<void> {
 export async function updateEvent(patch: Partial<EventInfo>): Promise<void> {
   await adminDb().doc(EVENT_DOC).set(patch, { merge: true })
 }
+
+export async function resetAll(): Promise<void> {
+  const db = adminDb()
+  const snap = await db.collection(OFFICIALS).get()
+  const batch = db.batch()
+  snap.docs.forEach((d) =>
+    batch.update(d.ref, { confirmed: false, confirmed_at: null }),
+  )
+  await batch.commit()
+}

@@ -12,3 +12,4 @@ export const confirmByToken = impl.confirmByToken
 export const adminUpdateOfficial = impl.adminUpdateOfficial
 export const adminDeleteOfficial = impl.adminDeleteOfficial
 export const updateEvent = impl.updateEvent
+export const resetAll = impl.resetAll

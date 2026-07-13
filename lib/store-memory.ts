@@ -52,3 +52,7 @@ export async function adminDeleteOfficial(id: string): Promise<void> {
 export async function updateEvent(patch: Partial<EventInfo>): Promise<void> {
   event = { ...event, ...patch }
 }
+
+export async function resetAll(): Promise<void> {
+  officials = officials.map((o) => ({ ...o, confirmed: false, confirmed_at: null }))
+}
