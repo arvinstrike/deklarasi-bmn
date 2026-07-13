@@ -92,6 +92,8 @@ export function AdminPanel({
         </div>
       )}
 
+      <TestSend />
+
       <EventForm
         event={state.event}
         busy={busy}
@@ -129,6 +131,67 @@ export function AdminPanel({
         </div>
       </section>
     </main>
+  )
+}
+
+function TestSend() {
+  const [phone, setPhone] = useState('')
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{ ok: boolean; error?: string } | null>(null)
+
+  async function send() {
+    setBusy(true)
+    setResult(null)
+    const res = await post('/api/admin/test-invite', { phone, name })
+    const data = await res.json().catch(() => ({ ok: false, error: 'gagal' }))
+    setResult(data)
+    setBusy(false)
+  }
+
+  return (
+    <section className="mb-6 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+      <h2 className="mb-1 font-mono text-xs uppercase tracking-widest text-primary">
+        Tes Kirim WA
+      </h2>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Kirim ke nomor bebas (pribadi/random) untuk menguji. Tidak menyentuh data pejabat.
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          Nomor WhatsApp
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="0812..."
+            className="rounded border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          Nama (opsional)
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Tes Kirim"
+            className="rounded border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+          />
+        </label>
+        <button
+          disabled={busy || !phone}
+          onClick={send}
+          className="rounded bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+        >
+          {busy ? 'Mengirim...' : 'Kirim Tes'}
+        </button>
+      </div>
+      {result && (
+        <p className={`mt-3 text-sm ${result.ok ? 'text-green-600' : 'text-red-600'}`}>
+          {result.ok
+            ? '✓ Terkirim! Cek WhatsApp nomor tersebut.'
+            : `✗ Gagal: ${result.error ?? 'unknown'}`}
+        </p>
+      )}
+    </section>
   )
 }
 
