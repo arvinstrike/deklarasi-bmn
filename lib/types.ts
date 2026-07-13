@@ -8,6 +8,10 @@ export interface Official {
   token: string
   confirmed: boolean
   confirmed_at: number | null
+  /** WhatsApp recipient number (admin-entered). */
+  phone?: string | null
+  /** Last WA invite result. */
+  wa_status?: 'sent' | 'failed' | null
 }
 
 export interface EventInfo {

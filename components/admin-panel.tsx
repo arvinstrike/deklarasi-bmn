@@ -12,10 +12,17 @@ async function post(url: string, body: unknown) {
   })
 }
 
-export function AdminPanel({ initial }: { initial: BoardState }) {
+export function AdminPanel({
+  initial,
+  qontakReady,
+}: {
+  initial: BoardState
+  qontakReady: boolean
+}) {
   const router = useRouter()
   const [state, setState] = useState<BoardState>(initial)
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState('')
 
   async function refresh() {
     const res = await fetch('/api/state', { cache: 'no-store' })
@@ -29,7 +36,25 @@ export function AdminPanel({ initial }: { initial: BoardState }) {
     setBusy(false)
   }
 
+  async function sendAll() {
+    const targets = state.officials.filter((o) => o.phone)
+    if (targets.length === 0) return
+    if (!confirm(`Kirim undangan WA ke ${targets.length} pejabat?`)) return
+    setBusy(true)
+    let sent = 0
+    for (let i = 0; i < targets.length; i++) {
+      setProgress(`Mengirim ${i + 1}/${targets.length}...`)
+      const res = await post('/api/admin/invite', { id: targets[i].id })
+      const data = await res.json().catch(() => ({ ok: false }))
+      if (data.ok) sent++
+    }
+    setProgress(`Selesai: ${sent}/${targets.length} terkirim.`)
+    await refresh()
+    setBusy(false)
+  }
+
   const signed = state.officials.filter((o) => o.confirmed).length
+  const withPhone = state.officials.filter((o) => o.phone).length
 
   return (
     <main className="mx-auto min-h-dvh max-w-3xl bg-background px-4 py-8">
@@ -59,12 +84,36 @@ export function AdminPanel({ initial }: { initial: BoardState }) {
         </div>
       </div>
 
-      <EventForm event={state.event} busy={busy} onSave={(patch) => run(() => post('/api/admin/event', { patch }))} />
+      {!qontakReady && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+          WhatsApp (Qontak) belum dikonfigurasi. Isi env{' '}
+          <code className="font-mono text-xs">QONTAK_TOKEN / QONTAK_CHANNEL_ID / QONTAK_TEMPLATE_ID</code>{' '}
+          agar tombol kirim aktif. Nomor HP tetap bisa diisi sekarang.
+        </div>
+      )}
+
+      <EventForm
+        event={state.event}
+        busy={busy}
+        onSave={(patch) => run(() => post('/api/admin/event', { patch }))}
+      />
 
       <section className="mt-6">
-        <h2 className="mb-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          Pejabat
-        </h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Pejabat
+          </h2>
+          <div className="flex items-center gap-3">
+            {progress && <span className="text-xs text-muted-foreground">{progress}</span>}
+            <button
+              disabled={busy || withPhone === 0}
+              onClick={sendAll}
+              className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+            >
+              Kirim WA ke semua ({withPhone})
+            </button>
+          </div>
+        </div>
         <div className="flex flex-col gap-2">
           {state.officials.map((o) => (
             <OfficialRow
@@ -74,6 +123,7 @@ export function AdminPanel({ initial }: { initial: BoardState }) {
               onUpdate={(patch) => run(() => post('/api/admin/official', { op: 'update', id: o.id, patch }))}
               onDelete={() => run(() => post('/api/admin/official', { op: 'delete', id: o.id }))}
               onUnconfirm={() => run(() => post('/api/admin/official', { op: 'unconfirm', id: o.id }))}
+              onSend={() => run(() => post('/api/admin/invite', { id: o.id }))}
             />
           ))}
         </div>
@@ -147,27 +197,31 @@ function OfficialRow({
   onUpdate,
   onDelete,
   onUnconfirm,
+  onSend,
 }: {
   official: Official
   busy: boolean
-  onUpdate: (patch: { name: string; position: string }) => void
+  onUpdate: (patch: { name: string; position: string; phone: string }) => void
   onDelete: () => void
   onUnconfirm: () => void
+  onSend: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(official.name)
   const [position, setPosition] = useState(official.position)
+  const [phone, setPhone] = useState(official.phone ?? '')
 
   if (editing) {
     return (
       <div className="flex flex-col gap-2 rounded border border-primary/50 bg-card p-3">
         <Field label="Nama" value={name} onChange={setName} />
         <Field label="Jabatan" value={position} onChange={setPosition} />
+        <Field label="Nomor WhatsApp (mis. 08123...)" value={phone} onChange={setPhone} />
         <div className="flex gap-2">
           <button
             disabled={busy}
             onClick={() => {
-              onUpdate({ name, position })
+              onUpdate({ name, position, phone })
               setEditing(false)
             }}
             className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40"
@@ -190,13 +244,34 @@ function OfficialRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">{official.name}</p>
         <p className="truncate text-xs text-muted-foreground">{official.position}</p>
+        <p className="mt-0.5 truncate font-mono text-[0.7rem] text-muted-foreground">
+          {official.phone || 'belum ada nomor'}
+        </p>
       </div>
       {official.confirmed && (
         <span className="shrink-0 rounded bg-primary/10 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wider text-primary">
           Komitmen
         </span>
       )}
+      {official.wa_status === 'sent' && (
+        <span className="shrink-0 text-[0.65rem] font-medium uppercase tracking-wider text-green-600">
+          Terkirim
+        </span>
+      )}
+      {official.wa_status === 'failed' && (
+        <span className="shrink-0 text-[0.65rem] font-medium uppercase tracking-wider text-red-600">
+          Gagal
+        </span>
+      )}
       <div className="flex shrink-0 gap-1">
+        <button
+          disabled={busy || !official.phone}
+          onClick={onSend}
+          title={official.phone ? 'Kirim undangan WA' : 'Isi nomor dulu'}
+          className="rounded border border-primary/40 px-2.5 py-1 text-xs text-primary hover:bg-primary/5 disabled:opacity-40"
+        >
+          Kirim
+        </button>
         {official.confirmed && (
           <button
             disabled={busy}

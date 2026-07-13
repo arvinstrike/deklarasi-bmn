@@ -15,6 +15,8 @@ let officials: Official[] = ROSTER.map((r, i) => ({
   token: r.token,
   confirmed: false,
   confirmed_at: null,
+  phone: null,
+  wa_status: null,
 }))
 let event: EventInfo = { ...EVENT }
 
