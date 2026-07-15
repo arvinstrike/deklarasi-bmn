@@ -59,15 +59,26 @@ export function Board({ initial }: { initial: BoardState }) {
     setQueue((q) => q.slice(1))
   }, [current, queue])
 
-  // Browsers block autoplay until a user gesture — unlock the audio context on
-  // the first click/key on the board tab, then chime on every new confirmation.
-  const audioRef = useRef<AudioContext | null>(null)
+  // Browsers block autoplay until a user gesture — prime the clip (muted) on the
+  // first click/key on the board tab, then play it on every new confirmation.
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const [soundOn, setSoundOn] = useState(false)
   useEffect(() => {
+    const a = new Audio('/sound_track/faaa.mp3')
+    a.preload = 'auto'
+    audioRef.current = a
     const unlock = () => {
-      const w = window as typeof window & { webkitAudioContext?: typeof AudioContext }
-      if (!audioRef.current) audioRef.current = new (w.AudioContext ?? w.webkitAudioContext!)()
-      void audioRef.current.resume().then(() => setSoundOn(true))
+      a.muted = true
+      a.play()
+        .then(() => {
+          a.pause()
+          a.currentTime = 0
+          a.muted = false
+          setSoundOn(true)
+        })
+        .catch(() => {
+          a.muted = false
+        })
     }
     window.addEventListener('pointerdown', unlock)
     window.addEventListener('keydown', unlock)
@@ -79,7 +90,11 @@ export function Board({ initial }: { initial: BoardState }) {
 
   useEffect(() => {
     if (!current) return
-    chime(audioRef.current)
+    const a = audioRef.current
+    if (a) {
+      a.currentTime = 0
+      void a.play().catch(() => {})
+    }
     const t = setTimeout(() => setCurrent(null), ANNOUNCE_MS)
     return () => clearTimeout(t)
   }, [current])
@@ -174,26 +189,6 @@ function LogoBar() {
       <LogoGroup logos={LOGOS_RIGHT} />
     </div>
   )
-}
-
-// Celebratory C-major bell arpeggio, synthesized live — no audio asset to ship.
-// Swap for `new Audio('/chime.mp3').play()` later if a real gong is preferred.
-function chime(ctx: AudioContext | null) {
-  if (!ctx || ctx.state !== 'running') return
-  const now = ctx.currentTime
-  ;[523.25, 659.25, 783.99].forEach((f, i) => {
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.type = 'sine'
-    osc.frequency.value = f
-    const t = now + i * 0.12
-    gain.gain.setValueAtTime(0.0001, t)
-    gain.gain.exponentialRampToValueAtTime(0.28, t + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.4)
-    osc.connect(gain).connect(ctx.destination)
-    osc.start(t)
-    osc.stop(t + 1.5)
-  })
 }
 
 function Header({
