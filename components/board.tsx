@@ -59,8 +59,27 @@ export function Board({ initial }: { initial: BoardState }) {
     setQueue((q) => q.slice(1))
   }, [current, queue])
 
+  // Browsers block autoplay until a user gesture — unlock the audio context on
+  // the first click/key on the board tab, then chime on every new confirmation.
+  const audioRef = useRef<AudioContext | null>(null)
+  const [soundOn, setSoundOn] = useState(false)
+  useEffect(() => {
+    const unlock = () => {
+      const w = window as typeof window & { webkitAudioContext?: typeof AudioContext }
+      if (!audioRef.current) audioRef.current = new (w.AudioContext ?? w.webkitAudioContext!)()
+      void audioRef.current.resume().then(() => setSoundOn(true))
+    }
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', unlock)
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+  }, [])
+
   useEffect(() => {
     if (!current) return
+    chime(audioRef.current)
     const t = setTimeout(() => setCurrent(null), ANNOUNCE_MS)
     return () => clearTimeout(t)
   }, [current])
@@ -70,15 +89,17 @@ export function Board({ initial }: { initial: BoardState }) {
   const stage = state.event.stage ?? 'board'
 
   const visible = state.officials.filter((o) => !o.hidden)
-  const eselon1 = visible.slice(0, ESELON_I_COUNT)
-  const rest = visible.slice(ESELON_I_COUNT)
   const signed = visible.filter((o) => o.confirmed).length
+  // Board shows only officials who have declared — starts empty, fills in live.
+  const eselonIds = new Set(visible.slice(0, ESELON_I_COUNT).map((o) => o.id))
+  const eselon1 = visible.filter((o) => o.confirmed && eselonIds.has(o.id))
+  const rest = visible.filter((o) => o.confirmed && !eselonIds.has(o.id))
 
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-background">
       <FitToScreen>
         <div
-          className="relative flex h-full w-full flex-col overflow-hidden px-[5cqw] pb-[4.5cqh] pt-[4.8cqh]"
+          className="relative flex h-full w-full flex-col overflow-hidden px-[5cqw] pb-[4.5cqh] pt-[5.5cqh]"
           style={{ containerType: 'size', background: 'var(--royal-bg)' }}
         >
           <LogoBar />
@@ -89,14 +110,16 @@ export function Board({ initial }: { initial: BoardState }) {
             <>
               <Header event={state.event} signed={signed} total={visible.length} />
               <div className="mt-[2cqh] flex min-h-0 flex-1 flex-col gap-[2.5cqh]">
-                <div className="flex shrink-0 justify-center gap-[4cqw]">
-                  {eselon1.map((o) => (
-                    // ponytail: 9.5cqw ≈ 1.5× the auto-fit cells below — tune here.
-                    <div key={o.id} style={{ width: '9.5cqw', containerType: 'inline-size' }}>
-                      <PhotoBlock official={o} />
-                    </div>
-                  ))}
-                </div>
+                {eselon1.length > 0 && (
+                  <div className="flex shrink-0 justify-center gap-[4cqw]">
+                    {eselon1.map((o) => (
+                      // ponytail: 9.5cqw ≈ 1.5× the auto-fit cells below — tune here.
+                      <div key={o.id} style={{ width: '9.5cqw', containerType: 'inline-size' }}>
+                        <PhotoBlock official={o} />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {rest.length > 0 && <AutoFitGrid officials={rest} />}
               </div>
               <BoardFooter />
@@ -104,6 +127,12 @@ export function Board({ initial }: { initial: BoardState }) {
           )}
 
           <Frame />
+          {stage === 'board' && !soundOn && (
+            // Any click/key unlocks audio (window listener); this is just the cue.
+            <button className="absolute bottom-[2.5cqh] left-[5cqw] z-20 rounded-full border border-accent/50 bg-background/70 px-[1.4cqw] py-[0.7cqh] font-mono text-[0.7cqw] uppercase tracking-widest text-accent backdrop-blur">
+              &#128266; Klik untuk aktifkan suara
+            </button>
+          )}
           {stage === 'board' && current && <Announcement official={current} />}
         </div>
       </FitToScreen>
@@ -140,11 +169,31 @@ function LogoGroup({ logos }: { logos: { src: string; alt: string }[] }) {
 
 function LogoBar() {
   return (
-    <div className="mb-[1.4cqh] flex items-center justify-between px-[2cqw]">
+    <div className="mb-[1.4cqh] mt-[1.5cqh] flex items-center justify-between px-[5cqw]">
       <LogoGroup logos={LOGOS_LEFT} />
       <LogoGroup logos={LOGOS_RIGHT} />
     </div>
   )
+}
+
+// Celebratory C-major bell arpeggio, synthesized live — no audio asset to ship.
+// Swap for `new Audio('/chime.mp3').play()` later if a real gong is preferred.
+function chime(ctx: AudioContext | null) {
+  if (!ctx || ctx.state !== 'running') return
+  const now = ctx.currentTime
+  ;[523.25, 659.25, 783.99].forEach((f, i) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = f
+    const t = now + i * 0.12
+    gain.gain.setValueAtTime(0.0001, t)
+    gain.gain.exponentialRampToValueAtTime(0.28, t + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.4)
+    osc.connect(gain).connect(ctx.destination)
+    osc.start(t)
+    osc.stop(t + 1.5)
+  })
 }
 
 function Header({
