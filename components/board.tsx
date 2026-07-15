@@ -114,7 +114,7 @@ export function Board({ initial }: { initial: BoardState }) {
     <main className="relative h-dvh w-screen overflow-hidden bg-background">
       <FitToScreen>
         <div
-          className="relative flex h-full w-full flex-col overflow-hidden px-[5cqw] pb-[4.5cqh] pt-[5.5cqh]"
+          className="relative flex h-full w-full flex-col overflow-hidden px-[5cqw] pb-[6.5cqh] pt-[5.5cqh]"
           style={{ containerType: 'size', background: 'var(--royal-bg)' }}
         >
           <LogoBar />
@@ -183,8 +183,11 @@ function LogoGroup({ logos }: { logos: { src: string; alt: string }[] }) {
 }
 
 function LogoBar() {
+  // Absolutely positioned + own z-layer, so its placement is independent of the
+  // header. Tune here freely without shifting the centered header:
+  //   top-[..]  = jarak dari atas   ·  left/right-[..] = jarak dari sisi
   return (
-    <div className="mb-[1.4cqh] mt-[1.5cqh] flex items-center justify-between px-[5cqw]">
+    <div className="absolute left-[5cqw] right-[5cqw] top-[3.5cqh] z-30 flex items-center justify-between">
       <LogoGroup logos={LOGOS_LEFT} />
       <LogoGroup logos={LOGOS_RIGHT} />
     </div>
@@ -201,7 +204,7 @@ function Header({
   total: number
 }) {
   return (
-    <header className="flex flex-col items-center text-center">
+    <header className="relative z-30 flex flex-col items-center text-center">
       <p className="font-mono text-[0.78cqw] uppercase tracking-[0.42em] text-accent">
         {DEKLARASI.kicker}
       </p>
@@ -228,7 +231,7 @@ function Header({
 // just the affirmation that portraits shown have signed the shared commitment.
 function BoardFooter() {
   return (
-    <footer className="mt-[1.5cqh] shrink-0 text-center">
+    <footer className="relative z-30 mt-[1.5cqh] shrink-0 text-center">
       <p className="mx-auto max-w-[74cqw] text-pretty font-serif text-[1.05cqw] italic leading-snug text-muted-foreground">
         Para pejabat yang portretnya tampil pada layar ini telah menyatakan{' '}
         <span className="not-italic text-accent">Komitmen Bersama</span> Peningkatan
@@ -241,7 +244,7 @@ function BoardFooter() {
 // Opening slide (stage='opening'): the full declaration text the MC briefs on.
 function Narration() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-[3cqw] text-center [animation:rise_600ms_ease-out]">
+    <div className="relative z-30 flex min-h-0 flex-1 flex-col items-center justify-center px-[3cqw] text-center [animation:rise_600ms_ease-out]">
       <p className="font-mono text-[0.9cqw] uppercase tracking-[0.45em] text-accent">
         {DEKLARASI.kicker}
       </p>
@@ -312,7 +315,7 @@ function Announcement({ official }: { official: Official }) {
   return (
     <div
       key={official.id}
-      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-background/80 backdrop-blur-[2px] [animation:announceIn_500ms_ease-out]"
+      className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-[2px] [animation:announceIn_500ms_ease-out]"
     >
       <div className="flex flex-col items-center px-[6cqw] text-center">
         {official.photo && (
