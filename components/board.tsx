@@ -10,6 +10,8 @@ import { AutoFitGrid } from './auto-fit-grid'
 
 const POLL_MS = 2000
 const ANNOUNCE_MS = 5000
+const THEME_VOLUME = 0.4 // idle background music level
+const THEME_DUCK = 0.14 // lowered while an announcement chimes
 
 export function Board({ initial }: { initial: BoardState }) {
   const [state, setState] = useState<BoardState>(initial)
@@ -62,11 +64,21 @@ export function Board({ initial }: { initial: BoardState }) {
   // Browsers block autoplay until a user gesture — prime the clip (muted) on the
   // first click/key on the board tab, then play it on every new confirmation.
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const themeRef = useRef<HTMLAudioElement | null>(null)
   const [soundOn, setSoundOn] = useState(false)
   useEffect(() => {
     const a = new Audio('/sound_track/faaa.mp3')
     a.preload = 'auto'
     audioRef.current = a
+
+    // Looping idle theme for the signing board — plays while WA invites go out
+    // and officials sign, until the operator leaves the board stage.
+    const theme = new Audio(encodeURI('/sound_track/Soviet Connection (Theme from GTA IV).mp3'))
+    theme.loop = true
+    theme.volume = THEME_VOLUME
+    theme.preload = 'auto'
+    themeRef.current = theme
+
     const unlock = () => {
       a.muted = true
       a.play()
@@ -85,6 +97,7 @@ export function Board({ initial }: { initial: BoardState }) {
     return () => {
       window.removeEventListener('pointerdown', unlock)
       window.removeEventListener('keydown', unlock)
+      theme.pause()
     }
   }, [])
 
@@ -95,8 +108,13 @@ export function Board({ initial }: { initial: BoardState }) {
       a.currentTime = 0
       void a.play().catch(() => {})
     }
+    const theme = themeRef.current
+    if (theme) theme.volume = THEME_DUCK // duck music under the chime
     const t = setTimeout(() => setCurrent(null), ANNOUNCE_MS)
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(t)
+      if (theme) theme.volume = THEME_VOLUME
+    }
   }, [current])
 
   // Stage drives the presentation: opening narration slide → signing board.
@@ -110,11 +128,19 @@ export function Board({ initial }: { initial: BoardState }) {
   const eselon1 = visible.filter((o) => o.confirmed && eselonIds.has(o.id))
   const rest = visible.filter((o) => o.confirmed && !eselonIds.has(o.id))
 
+  // Idle theme runs only on the signing board, once audio is unlocked; loops.
+  useEffect(() => {
+    const theme = themeRef.current
+    if (!theme) return
+    if (soundOn && stage === 'board') void theme.play().catch(() => {})
+    else theme.pause()
+  }, [soundOn, stage])
+
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-background">
       <FitToScreen>
         <div
-          className="relative flex h-full w-full flex-col overflow-hidden px-[5cqw] pb-[6.5cqh] pt-[5.5cqh]"
+          className="relative flex h-full w-full flex-col overflow-hidden px-[5cqw] pb-[4.5cqh] pt-[5.5cqh]"
           style={{ containerType: 'size', background: 'var(--royal-bg)' }}
         >
           <LogoBar />
@@ -183,11 +209,8 @@ function LogoGroup({ logos }: { logos: { src: string; alt: string }[] }) {
 }
 
 function LogoBar() {
-  // Absolutely positioned + own z-layer, so its placement is independent of the
-  // header. Tune here freely without shifting the centered header:
-  //   top-[..]  = jarak dari atas   ·  left/right-[..] = jarak dari sisi
   return (
-    <div className="absolute left-[5cqw] right-[5cqw] top-[3.5cqh] z-30 flex items-center justify-between">
+    <div className="mb-[1.4cqh] mt-15 flex items-center justify-between px-[5cqw]">
       <LogoGroup logos={LOGOS_LEFT} />
       <LogoGroup logos={LOGOS_RIGHT} />
     </div>
@@ -204,7 +227,7 @@ function Header({
   total: number
 }) {
   return (
-    <header className="relative z-30 flex flex-col items-center text-center">
+    <header className="flex flex-col items-center text-center">
       <p className="font-mono text-[0.78cqw] uppercase tracking-[0.42em] text-accent">
         {DEKLARASI.kicker}
       </p>
@@ -231,7 +254,7 @@ function Header({
 // just the affirmation that portraits shown have signed the shared commitment.
 function BoardFooter() {
   return (
-    <footer className="relative z-30 mt-[1.5cqh] shrink-0 text-center">
+    <footer className="mt-[1.5cqh] shrink-0 text-center">
       <p className="mx-auto max-w-[74cqw] text-pretty font-serif text-[1.05cqw] italic leading-snug text-muted-foreground">
         Para pejabat yang portretnya tampil pada layar ini telah menyatakan{' '}
         <span className="not-italic text-accent">Komitmen Bersama</span> Peningkatan
@@ -244,7 +267,7 @@ function BoardFooter() {
 // Opening slide (stage='opening'): the full declaration text the MC briefs on.
 function Narration() {
   return (
-    <div className="relative z-30 flex min-h-0 flex-1 flex-col items-center justify-center px-[3cqw] text-center [animation:rise_600ms_ease-out]">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-[3cqw] text-center [animation:rise_600ms_ease-out]">
       <p className="font-mono text-[0.9cqw] uppercase tracking-[0.45em] text-accent">
         {DEKLARASI.kicker}
       </p>
@@ -315,7 +338,7 @@ function Announcement({ official }: { official: Official }) {
   return (
     <div
       key={official.id}
-      className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-[2px] [animation:announceIn_500ms_ease-out]"
+      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-background/80 backdrop-blur-[2px] [animation:announceIn_500ms_ease-out]"
     >
       <div className="flex flex-col items-center px-[6cqw] text-center">
         {official.photo && (
