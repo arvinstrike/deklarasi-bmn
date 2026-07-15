@@ -22,6 +22,8 @@ export interface EventInfo {
   location: string
   date: string
   locked: boolean
+  /** Presentation stage the board follows: opening narration slide → signing board. */
+  stage?: 'opening' | 'board'
 }
 
 export interface BoardState {

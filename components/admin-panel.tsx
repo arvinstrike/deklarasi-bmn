@@ -91,6 +91,12 @@ export function AdminPanel({
         </div>
       )}
 
+      <StageControl
+        stage={state.event.stage ?? 'opening'}
+        busy={busy}
+        onSet={(stage) => run(() => post('/api/admin/event', { patch: { stage } }))}
+      />
+
       <TestSend />
 
       <EventForm
@@ -179,6 +185,47 @@ export function AdminPanel({
         </div>
       </section>
     </main>
+  )
+}
+
+// Drives what the projected board shows. Flip to 'board' after the MC briefing.
+function StageControl({
+  stage,
+  busy,
+  onSet,
+}: {
+  stage: 'opening' | 'board'
+  busy: boolean
+  onSet: (stage: 'opening' | 'board') => void
+}) {
+  const opt = (s: 'opening' | 'board', label: string, sub: string) => (
+    <button
+      disabled={busy}
+      onClick={() => onSet(s)}
+      className={`flex-1 rounded-lg border px-4 py-3 text-left transition disabled:opacity-40 ${
+        stage === s
+          ? 'border-primary bg-primary/15 text-foreground'
+          : 'border-border text-muted-foreground hover:bg-muted'
+      }`}
+    >
+      <span className="block text-sm font-semibold">{label}</span>
+      <span className="block text-xs text-muted-foreground">{sub}</span>
+    </button>
+  )
+
+  return (
+    <section className="mb-6 rounded-lg border border-primary/40 bg-primary/5 p-4">
+      <h2 className="mb-1 font-mono text-xs uppercase tracking-widest text-primary">
+        Tahap Tampilan Layar
+      </h2>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Kendalikan apa yang tampil di layar proyektor. Layar mengikuti otomatis (±2 dtk).
+      </p>
+      <div className="flex gap-2">
+        {opt('opening', '1 · Halaman Pembuka', 'Narasi & 3 butir komitmen')}
+        {opt('board', '2 · Papan Deklarasi', 'Foto pejabat & tanda komitmen')}
+      </div>
+    </section>
   )
 }
 

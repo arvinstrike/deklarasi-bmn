@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   if (typeof patch?.location === 'string') clean.location = patch.location.trim()
   if (typeof patch?.date === 'string') clean.date = patch.date
   if (typeof patch?.locked === 'boolean') clean.locked = patch.locked
+  if (patch?.stage === 'opening' || patch?.stage === 'board') clean.stage = patch.stage
   await updateEvent(clean)
   return NextResponse.json({ ok: true })
 }

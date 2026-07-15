@@ -18,21 +18,22 @@
 }
 
 :root {
-  /* Digitall cold-blue palette — single source of truth. */
-  --ek-blue: #5377d7;
-  --ek-blue-strong: #315bc5;
-  --ek-blue-soft: #eef5ff;
+  /* Royal-blue + gold palette — single source of truth for board, slide & phone. */
+  --background: #0a1747;
+  --foreground: #f5f0e1;
+  --card: #0d1e5a;
+  --primary: #d9b95c;
+  --primary-foreground: #0a1747;
+  --accent: #e0c26a;
+  --muted: #16276e;
+  --muted-foreground: #aab6dd;
+  --border: #2b3f86;
+  --gold: #e8cc76;
 
-  --background: #f5f8ff;
-  --foreground: #1e2a44;
-  --card: #ffffff;
-  --primary: var(--ek-blue);
-  --primary-foreground: #ffffff;
-  --accent: var(--ek-blue);
-  --muted: var(--ek-blue-soft);
-  --muted-foreground: #5b6b8c;
-  --border: #d6e2f7;
-  --gold: var(--ek-blue);
+  /* Royal vignette used behind the projected canvas + phone page. */
+  --royal-bg: radial-gradient(ellipse at 50% 18%, #17307f 0%, #0a1747 52%, #060f33 100%);
+  /* Brushed-gold gradient used to recolor frame.svg via CSS mask. */
+  --gold-sheen: linear-gradient(135deg, #f6e29a 0%, #d9b95c 34%, #b8912f 58%, #f2dc8c 100%);
 }
 
 @layer base {
@@ -64,5 +65,33 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Rising reveal for narration lines + phone commitment card. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Wax-seal stamp when a commitment is recorded on the phone. */
+@keyframes sealIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.6) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.92) rotate(-8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-8deg);
   }
 }

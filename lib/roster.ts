@@ -43,4 +43,5 @@ export const EVENT: EventInfo = {
   location: 'Ruang KK II',
   date: '2026-08-17',
   locked: false,
+  stage: 'opening',
 }
