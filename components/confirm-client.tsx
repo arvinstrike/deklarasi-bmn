@@ -48,7 +48,10 @@ export function ConfirmClient({ official }: { official: Official }) {
               <ol className="mt-4 flex flex-col gap-3">
                 {DEKLARASI.points.map((p, i) => (
                   <li key={i} className="flex gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--gold-sheen)] font-serif text-sm font-bold text-primary-foreground">
+                    <span
+                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-serif text-sm font-bold text-primary-foreground"
+                      style={{ background: 'var(--gold-sheen)' }}
+                    >
                       {i + 1}
                     </span>
                     <p className="text-pretty font-serif text-[0.9rem] leading-snug text-foreground/85">
@@ -67,7 +70,8 @@ export function ConfirmClient({ official }: { official: Official }) {
             <button
               onClick={confirm}
               disabled={busy}
-              className="mt-6 h-16 w-full rounded-md bg-[var(--gold-sheen)] text-lg font-semibold text-primary-foreground shadow-[0_0_1.4rem_rgba(232,204,118,0.35)] transition-opacity disabled:opacity-40"
+              style={{ background: 'var(--gold-sheen)' }}
+              className="mt-6 h-16 w-full rounded-md text-lg font-bold text-primary-foreground shadow-[0_0_1.4rem_rgba(232,204,118,0.45)] transition active:scale-[0.98] disabled:opacity-40"
             >
               {busy ? 'Menyimpan...' : 'Saya Menyatakan Komitmen'}
             </button>
@@ -83,8 +87,11 @@ function Recorded({ official }: { official: Official }) {
     <div className="flex flex-col items-center">
       <div className="relative mt-8">
         <Portrait official={official} />
-        <span className="absolute -bottom-2 -right-2 rounded-full border-2 border-primary-foreground bg-[var(--gold-sheen)] px-3 py-1 font-serif text-xs font-bold uppercase tracking-wide text-primary-foreground [animation:sealIn_650ms_ease-out] shadow-lg">
-          ✓ Berkomitmen
+        <span
+          className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary-foreground text-lg font-bold text-primary-foreground shadow-lg [animation:sealIn_650ms_ease-out]"
+          style={{ background: 'var(--gold-sheen)' }}
+        >
+          ✓
         </span>
       </div>
       <h2 className="mt-6 font-serif text-2xl font-semibold text-foreground">

@@ -80,18 +80,18 @@
   }
 }
 
-/* Wax-seal stamp when a commitment is recorded on the phone. */
+/* Check badge pop when a commitment is recorded on the phone. */
 @keyframes sealIn {
   0% {
     opacity: 0;
-    transform: scale(1.6) rotate(-8deg);
+    transform: scale(1.7);
   }
   60% {
     opacity: 1;
-    transform: scale(0.92) rotate(-8deg);
+    transform: scale(0.88);
   }
   100% {
     opacity: 1;
-    transform: scale(1) rotate(-8deg);
+    transform: scale(1);
   }
 }

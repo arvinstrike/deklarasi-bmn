@@ -270,7 +270,10 @@ function Narration() {
       <ol className="mt-[2.2cqh] flex max-w-[80cqw] flex-col gap-[1.4cqh] text-left">
         {DEKLARASI.points.map((p, i) => (
           <li key={i} className="flex gap-[1.4cqw]">
-            <span className="mt-[0.2cqh] flex h-[2.4cqw] w-[2.4cqw] shrink-0 items-center justify-center rounded-full bg-[var(--gold-sheen)] font-serif text-[1.3cqw] font-bold text-primary-foreground">
+            <span
+              className="mt-[0.2cqh] flex h-[2.4cqw] w-[2.4cqw] shrink-0 items-center justify-center rounded-full font-serif text-[1.3cqw] font-bold text-primary-foreground"
+              style={{ background: 'var(--gold-sheen)' }}
+            >
               {i + 1}
             </span>
             <p className="text-pretty font-serif text-[1.28cqw] leading-[1.42] text-foreground/90">
