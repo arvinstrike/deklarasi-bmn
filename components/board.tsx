@@ -63,14 +63,10 @@ export function Board({ initial }: { initial: BoardState }) {
 
   // Browsers block autoplay until a user gesture — prime the clip (muted) on the
   // first click/key on the board tab, then play it on every new confirmation.
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
   const themeRef = useRef<HTMLAudioElement | null>(null)
   const [soundOn, setSoundOn] = useState(false)
   useEffect(() => {
-    const a = new Audio('/sound_track/faaa.mp3')
-    a.preload = 'auto'
-    audioRef.current = a
-
     // Looping idle theme for the signing board — plays while WA invites go out
     // and officials sign, until the operator leaves the board stage.
     const theme = new Audio(encodeURI('/sound_track/Soviet Connection (Theme from GTA IV).mp3'))
@@ -80,16 +76,23 @@ export function Board({ initial }: { initial: BoardState }) {
     themeRef.current = theme
 
     const unlock = () => {
-      a.muted = true
-      a.play()
+      // Web Audio context for the synthesized chime.
+      const w = window as typeof window & { webkitAudioContext?: typeof AudioContext }
+      if (!audioCtxRef.current) audioCtxRef.current = new (w.AudioContext ?? w.webkitAudioContext!)()
+      void audioCtxRef.current.resume()
+      // Prime the looping theme (muted) so a later play() is allowed.
+      theme.muted = true
+      theme
+        .play()
         .then(() => {
-          a.pause()
-          a.currentTime = 0
-          a.muted = false
+          theme.pause()
+          theme.currentTime = 0
+          theme.muted = false
           setSoundOn(true)
         })
         .catch(() => {
-          a.muted = false
+          theme.muted = false
+          setSoundOn(true)
         })
     }
     window.addEventListener('pointerdown', unlock)
@@ -103,11 +106,7 @@ export function Board({ initial }: { initial: BoardState }) {
 
   useEffect(() => {
     if (!current) return
-    const a = audioRef.current
-    if (a) {
-      a.currentTime = 0
-      void a.play().catch(() => {})
-    }
+    chime(audioCtxRef.current)
     const theme = themeRef.current
     if (theme) theme.volume = THEME_DUCK // duck music under the chime
     const t = setTimeout(() => setCurrent(null), ANNOUNCE_MS)
@@ -206,6 +205,25 @@ function LogoGroup({ logos }: { logos: { src: string; alt: string }[] }) {
       ))}
     </div>
   )
+}
+
+// Formal C-major bell arpeggio, synthesized live — no audio asset to ship.
+function chime(ctx: AudioContext | null) {
+  if (!ctx || ctx.state !== 'running') return
+  const now = ctx.currentTime
+  ;[523.25, 659.25, 783.99].forEach((f, i) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = f
+    const t = now + i * 0.12
+    gain.gain.setValueAtTime(0.0001, t)
+    gain.gain.exponentialRampToValueAtTime(0.28, t + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.4)
+    osc.connect(gain).connect(ctx.destination)
+    osc.start(t)
+    osc.stop(t + 1.5)
+  })
 }
 
 function LogoBar() {
